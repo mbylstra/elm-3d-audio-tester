@@ -12,12 +12,12 @@ var audioContext = new AudioContext();
 
 elm.ports.setListenerOrientation.subscribe(
   function(orientation3D) {
-    console.log('orientation3D', orientation3D);
+    // console.log('orientation3D', orientation3D);
     var noseVector = orientation3D[0];
     var topOfHeadVector = orientation3D[1];
 
-    console.log('noseVector', noseVector);
-    console.log('topOfHeadVector', topOfHeadVector);
+    // console.log('noseVector', noseVector);
+    // console.log('topOfHeadVector', topOfHeadVector);
 
     audioContext.listener.setOrientation(
       noseVector.x,
@@ -83,7 +83,7 @@ note3.connect(panner);
 // whiteNoise.connect(audioContext.destination);
 panner.connect(audioContext.destination);
 
-console.log('audio???');
+// console.log('audio???');
 
 // if (window.DeviceOrientationEvent) {
 //   window.addEventListener('deviceorientation', function(event) {
