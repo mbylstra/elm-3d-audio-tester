@@ -9,11 +9,11 @@ import Html exposing
   , ol, ul, li, dl, dt, dd
   , form, input, textarea, button, select, option
   , table, caption, tbody, thead, tr, td, th
-  , em, strong, blockquote, hr
+  , em, strong, blockquote, hr, label
   )
 import Html.Attributes exposing
   ( style, class, id, title, hidden, type', checked, placeholder, selected
-  , name, href, src, alt
+  , name, href, src, alt, for
   )
 import Html.Events exposing
   ( on, targetValue, targetChecked, keyCode, onBlur, onFocus, onSubmit
@@ -49,12 +49,14 @@ type alias ListenerOrientation3D = (Point3D, Point3D)
 type alias Model =
   { listenerOrientationDegrees : Float
   , soundObjectLocation : Point3D
+  , muted : Bool
   }
 
 init : (Model, Cmd Msg)
 init =
   { listenerOrientationDegrees = 0.0
   , soundObjectLocation = { x = 0.0, y = 0.0, z = -5.0 }
+  , muted = False
   }
   !
   [ ]
@@ -79,21 +81,27 @@ listenerOrientationTo3D angleDegrees =
 radiansToDegrees angleRadians =
   angleRadians * ( 180.0 / pi)
 
+toggleMuteAudio : Model -> (Model, Cmd Msg)
+toggleMuteAudio model =
+  { model | muted = not model.muted } ! [ setMuteStateCmd <| not model.muted ]
+
+
 -- UPDATE
 
 type Msg
   = NoOp
   | ListenerOrientation Float
   | ClickCompass Position
+  | ToggleMute
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update action model =
-  -- case Debug.log "action" action of
-  case action of
+  case Debug.log "action" action of
+  -- case action of
     ListenerOrientation degrees ->
       let
         orientation3D = listenerOrientationTo3D degrees
-        cmd = setListenerOrientation orientation3D
+        cmd = setListenerOrientationCmd orientation3D
       in
         { model | listenerOrientationDegrees = degrees }
         ! [ cmd ]
@@ -132,7 +140,7 @@ update action model =
         -- angleDegrees'' = angleDegrees' + 90.0
 
         orientation3D = listenerOrientationTo3D angleDegrees
-        cmd = setListenerOrientation orientation3D
+        cmd = setListenerOrientationCmd orientation3D
 
 
         -- _ = Debug.log "-------------" True
@@ -144,6 +152,10 @@ update action model =
         { model | listenerOrientationDegrees = angleDegrees }
         ! [ cmd ]
 
+    ToggleMute ->
+      toggleMuteAudio model
+
+
 -- VIEW
 
 
@@ -152,7 +164,11 @@ view model =
   div
     []
     [ div []
-      [ text <| "Orientation: " ++ toString model.listenerOrientationDegrees
+      [ div []
+        [ label [ for "mute-audio-button" ] [ text "Muted " ]
+        , input [ id "mute-audio-button", type' "checkbox", onClick ToggleMute ] []
+        ]
+      , text <| "Orientation: " ++ toString model.listenerOrientationDegrees
       ]
     , div []
       [ setOrientationButton 0.0
@@ -217,5 +233,8 @@ compassArrow angleDegrees =
 
 -- PORTS
 
-port setListenerOrientation
+port setListenerOrientationCmd
   : ListenerOrientation3D -> Cmd msg
+
+port setMuteStateCmd
+  : Bool -> Cmd msg

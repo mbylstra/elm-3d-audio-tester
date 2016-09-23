@@ -10,7 +10,7 @@ var elm = Elm.Main.embed( document.getElementById( 'main' ) );
 
 var audioContext = new AudioContext();
 
-elm.ports.setListenerOrientation.subscribe(
+elm.ports.setListenerOrientationCmd.subscribe(
   function(orientation3D) {
     // console.log('orientation3D', orientation3D);
     var noseVector = orientation3D[0];
@@ -27,6 +27,17 @@ elm.ports.setListenerOrientation.subscribe(
       topOfHeadVector.y,
       topOfHeadVector.z
     );
+  }
+);
+
+elm.ports.setMuteStateCmd.subscribe(
+  function(muted) {
+    console.log('muted', muted);
+    if (muted) {
+      muteNode.gain.value = 0.0;
+    } else {
+      muteNode.gain.value = 1.0;
+    }
   }
 );
 
@@ -80,8 +91,12 @@ note1.connect(panner);
 note2.connect(panner);
 note3.connect(panner);
 
+muteNode = audioContext.createGain();
+muteNode.gain.value = 1.0;
+
 // whiteNoise.connect(audioContext.destination);
-panner.connect(audioContext.destination);
+panner.connect(muteNode)
+muteNode.connect(audioContext.destination);
 
 // console.log('audio???');
 
