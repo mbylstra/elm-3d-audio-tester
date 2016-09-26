@@ -41,6 +41,18 @@ elm.ports.setMuteStateCmd.subscribe(
   }
 );
 
+elm.ports.setPanningModelCmd.subscribe(
+  function(panningModel) {
+    panner.panningModel = panningModel;
+  }
+);
+
+elm.ports.setDistanceCmd.subscribe(
+  function(distance) {
+    panner.setPosition(0, 0, distance);
+  }
+);
+
 
 
 function createWhiteNoiseNode() {

@@ -27,11 +27,19 @@ import Svg.Events
 
 import VirtualDom
 
+import Material
+import Material.Scheme
+import Material.Button as Button
+import Material.Slider as Slider
+import Material.Toggles as Toggles
+
 -- import Json.Decode as Decode
 
 import Json.Decode as Json exposing ((:=))
 
 import DOM exposing (target, offsetWidth, offsetLeft)
+
+import Lib exposing (matches)
 
 
 -- MODEL
@@ -50,6 +58,9 @@ type alias Model =
   { listenerOrientationDegrees : Float
   , soundObjectLocation : Point3D
   , muted : Bool
+  , panningModel : PanningModel
+  , mdl : Material.Model
+  , distance : Float
   }
 
 init : (Model, Cmd Msg)
@@ -57,6 +68,9 @@ init =
   { listenerOrientationDegrees = 0.0
   , soundObjectLocation = { x = 0.0, y = 0.0, z = -5.0 }
   , muted = False
+  , panningModel = HRTF
+  , mdl = Material.model
+  , distance = 5.0
   }
   !
   [ ]
@@ -93,6 +107,11 @@ type Msg
   | ListenerOrientation Float
   | ClickCompass Position
   | ToggleMute
+  | Mdl (Material.Msg Msg)
+  | SetPanningModel PanningModel
+  | SetDistance Float
+
+type PanningModel = HRTF | EqualPower
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update action model =
@@ -119,15 +138,15 @@ update action model =
         normY = translateY pos.y
         angleRads = atan (normY / normX)
         angleRads' =
-          if (normX > 0 && normY > 0)
+          if (normX >= 0 && normY >= 0)
           then
             angleRads
           else
-            if (normX < 0 && normY > 0)
+            if (normX <= 0 && normY >= 0)
             then
               angleRads + pi
             else
-              if (normX < 0 && normY < 0)
+              if (normX <= 0 && normY <= 0)
               then
                 angleRads+ pi
               else
@@ -155,9 +174,19 @@ update action model =
     ToggleMute ->
       toggleMuteAudio model
 
+    Mdl msg' ->
+      Material.update msg' model
+
+    SetPanningModel panningModel ->
+      { model | panningModel = panningModel } ! [ createSetPanningModelCmd panningModel ]
+
+    SetDistance distance ->
+      { model | distance = distance } ! [ setDistanceCmd distance ]
 
 -- VIEW
 
+type alias Mdl =
+    Material.Model
 
 view : Model -> Html Msg
 view model =
@@ -165,10 +194,52 @@ view model =
     []
     [ div []
       [ div []
-        [ label [ for "mute-audio-button" ] [ text "Muted " ]
-        , input [ id "mute-audio-button", type' "checkbox", onClick ToggleMute ] []
+
+        [ Toggles.switch Mdl [0] model.mdl
+          [ Toggles.onClick ToggleMute
+          , Toggles.ripple
+          , Toggles.value <| not model.muted
+          ]
+          [ text "Audio On" ]
         ]
+
+
+        -- [ label [ for "mute-audio-button" ] [ text "Mute " ]
+        -- , input [ id "mute-audio-button", type' "checkbox", onClick ToggleMute ] []
+        -- ]
       , text <| "Orientation: " ++ toString model.listenerOrientationDegrees
+      ]
+    , div []
+      [ Toggles.radio Mdl [0] model.mdl
+        [ Toggles.value
+          <| case model.panningModel of
+              HRTF -> True
+              _ -> False
+        , Toggles.group "PanningModel"
+        , Toggles.ripple
+        , Toggles.onClick <| SetPanningModel HRTF
+        ]
+        [ text "HRTF" ]
+      , Toggles.radio Mdl [1] model.mdl
+          [ Toggles.value
+            <| case model.panningModel of
+                EqualPower -> True
+                _ -> False
+          , Toggles.group "PanningModel"
+          , Toggles.ripple
+          , Toggles.onClick <| SetPanningModel EqualPower
+          ]
+          [ text "Equal Power" ]
+      ]
+    , div []
+      [ div [] [ text <| "Distance: " ++ (toString model.distance) ]
+      , Slider.view
+        [ Slider.onChange SetDistance
+        , Slider.value model.distance
+        , Slider.max 50
+        , Slider.min 0.0
+        , Slider.step 0.001
+        ]
       ]
     , div []
       [ setOrientationButton 0.0
@@ -214,12 +285,15 @@ options =
 
 compassArrow angleDegrees =
   let
-    centerX = "1"
-    centerY = "1"
-    xNorm = angleDegrees |> degrees |> cos
-    yNorm = angleDegrees |> degrees |> sin
-    xActual = xNorm + 1 |> toString
-    yActual = yNorm + 1 |> toString
+    centerX = 1.0
+    centerY = 1.0
+    length = 0.9
+    angleRadians = degrees angleDegrees
+    (xNorm, yNorm) = fromPolar (length, angleRadians)
+    -- xNorm = angleDegrees |> degrees |> cos
+    -- yNorm = angleDegrees |> degrees |> sin
+    xActual = xNorm + centerX |> toString
+    yActual = yNorm + centerY |> toString
 
     -- if y = 0, then y = 1
     -- if x = 1 then x = 2
@@ -229,7 +303,7 @@ compassArrow angleDegrees =
     -- _ = Debug.log "yNorm" yNorm
   in
     line
-      [ id "compass-line",  x1 centerX, y1 centerY, x2 xActual, y2 yActual ] []
+      [ id "compass-line",  x1 (centerX |> toString), y1 (centerY |> toString), x2 xActual, y2 yActual ] []
 
 -- PORTS
 
@@ -238,3 +312,19 @@ port setListenerOrientationCmd
 
 port setMuteStateCmd
   : Bool -> Cmd msg
+
+port setPanningModelCmd
+  : String -> Cmd msg
+
+createSetPanningModelCmd panningModel =
+  let
+    s =
+      case panningModel of
+        HRTF -> "HRTF"
+        EqualPower -> "equalpower"
+
+  in
+    setPanningModelCmd s
+
+port setDistanceCmd
+  : Float -> Cmd msg

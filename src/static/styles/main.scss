@@ -5,13 +5,20 @@ $icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
 // can add Boostrap overrides, additional Sass/CSS below...
 //
 //
+//
+
+
+body {
+  background-color: black;
+  color: #EEE;
+}
 #circle {
   margin: 20px;
-  fill: lightgreen;
+  fill: #333;
 }
 
 #compass-line {
-  stroke: black;
+  stroke: white;
   stroke-width: 0.01;
   fill: none;
 }
