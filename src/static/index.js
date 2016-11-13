@@ -10,6 +10,8 @@ var elm = Elm.Main.embed( document.getElementById( 'main' ) );
 
 var audioContext = new AudioContext();
 
+var useCompass = false;
+
 elm.ports.setListenerOrientationCmd.subscribe(
   function(orientation3D) {
     // console.log('orientation3D', orientation3D);
@@ -41,6 +43,13 @@ elm.ports.setMuteStateCmd.subscribe(
   }
 );
 
+elm.ports.setCompassStateCmd.subscribe(
+  function(localUseCompass) {
+    console.log('change compass state');
+    useCompass = localUseCompass;
+  }
+);
+
 elm.ports.setPanningModelCmd.subscribe(
   function(panningModel) {
     panner.panningModel = panningModel;
@@ -49,7 +58,7 @@ elm.ports.setPanningModelCmd.subscribe(
 
 elm.ports.setDistanceCmd.subscribe(
   function(distance) {
-    panner.setPosition(0, 0, distance);
+    // panner.setPosition(0, 0, distance);
   }
 );
 
@@ -110,20 +119,20 @@ muteNode.gain.value = 1.0;
 panner.connect(muteNode)
 muteNode.connect(audioContext.destination);
 
-// console.log('audio???');
+if (window.DeviceOrientationEvent) {
+  window.addEventListener('deviceorientation', function(event) {
+    var alpha = event.alpha;  //compass angle in degrees
+    //var beta = event.beta;
+    //var gamma = event.gamma;
+    // Do something
+    angleRadians = degreesToRadians(alpha);
 
-// if (window.DeviceOrientationEvent) {
-//   window.addEventListener('deviceorientation', function(event) {
-//     var alpha = event.alpha;  //compass angle in degrees
-//     //var beta = event.beta;
-//     //var gamma = event.gamma;
-//     // Do something
-//     angleRadians = degreesToRadians(alpha);
-//
-//     var z = Math.sin(angleRadians);
-//     var x = Math.cos(angleRadians);
-//     panner.setPosition(x, 0, z);
-//   }, false);
-// } else {
-//   console.log('DeviceOrientationEvent not supported');
-// }
+    var z = Math.sin(angleRadians);
+    var x = Math.cos(angleRadians);
+    if (useCompass) {
+      panner.setPosition(x, 0, z);
+    }
+  }, false);
+} else {
+  console.log('DeviceOrientationEvent not supported');
+}

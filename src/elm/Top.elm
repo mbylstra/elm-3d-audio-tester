@@ -61,6 +61,7 @@ type alias Model =
   , panningModel : PanningModel
   , mdl : Material.Model
   , distance : Float
+  , useCompass : Bool
   }
 
 init : (Model, Cmd Msg)
@@ -71,6 +72,7 @@ init =
   , panningModel = HRTF
   , mdl = Material.model
   , distance = 5.0
+  , useCompass = False
   }
   !
   [ ]
@@ -99,6 +101,9 @@ toggleMuteAudio : Model -> (Model, Cmd Msg)
 toggleMuteAudio model =
   { model | muted = not model.muted } ! [ setMuteStateCmd <| not model.muted ]
 
+toggleCompass : Model -> (Model, Cmd Msg)
+toggleCompass model =
+  { model | useCompass = not model.useCompass } ! [ setCompassStateCmd <| not model.useCompass ]
 
 -- UPDATE
 
@@ -107,6 +112,7 @@ type Msg
   | ListenerOrientation Float
   | ClickCompass Position
   | ToggleMute
+  | ToggleCompass
   | Mdl (Material.Msg Msg)
   | SetPanningModel PanningModel
   | SetDistance Float
@@ -174,6 +180,9 @@ update action model =
     ToggleMute ->
       toggleMuteAudio model
 
+    ToggleCompass ->
+      toggleCompass model
+
     Mdl msg' ->
       Material.update msg' model
 
@@ -193,60 +202,76 @@ view model =
   div
     []
     [ div []
-      [ div []
-
+      [ div [ class "mdl-grid"]
         [ Toggles.switch Mdl [0] model.mdl
           [ Toggles.onClick ToggleMute
           , Toggles.ripple
           , Toggles.value <| not model.muted
           ]
-          [ text "Audio On" ]
+          [ label [] [ text "Audio On" ] ]
+        ]
+      , div [ class "mdl-grid"]
+
+        [ Toggles.switch Mdl [1] model.mdl
+          [ Toggles.onClick ToggleCompass
+          , Toggles.ripple
+          , Toggles.value <| not model.useCompass
+          ]
+          [ label [] [ text "Use Compass (Mobile only)" ] ]
         ]
 
 
         -- [ label [ for "mute-audio-button" ] [ text "Mute " ]
         -- , input [ id "mute-audio-button", type' "checkbox", onClick ToggleMute ] []
         -- ]
-      , text <| "Orientation: " ++ toString model.listenerOrientationDegrees
       ]
-    , div []
-      [ Toggles.radio Mdl [0] model.mdl
-        [ Toggles.value
-          <| case model.panningModel of
-              HRTF -> True
-              _ -> False
-        , Toggles.group "PanningModel"
-        , Toggles.ripple
-        , Toggles.onClick <| SetPanningModel HRTF
-        ]
-        [ text "HRTF" ]
-      , Toggles.radio Mdl [1] model.mdl
-          [ Toggles.value
-            <| case model.panningModel of
-                EqualPower -> True
-                _ -> False
-          , Toggles.group "PanningModel"
-          , Toggles.ripple
-          , Toggles.onClick <| SetPanningModel EqualPower
+    , div [ class "mdl-grid panning-model-switch" ]
+      [ label [] [ text "Panning Model: " ]
+      , div [ class "" ]
+          [ Toggles.radio Mdl [3] model.mdl
+            [ Toggles.value
+              <| case model.panningModel of
+                  HRTF -> True
+                  _ -> False
+            , Toggles.group "PanningModel"
+            , Toggles.ripple
+            , Toggles.onClick <| SetPanningModel HRTF
+            ]
+            [ text "HRTF" ]
           ]
-          [ text "Equal Power" ]
+      , div [ class "" ]
+          [ Toggles.radio Mdl [4] model.mdl
+            [ Toggles.value
+              <| case model.panningModel of
+                  EqualPower -> True
+                  _ -> False
+            , Toggles.group "PanningModel"
+            , Toggles.ripple
+            , Toggles.onClick <| SetPanningModel EqualPower
+            ]
+            [ text "Equal Power" ]
+          ]
       ]
-    , div []
-      [ div [] [ text <| "Distance: " ++ (toString model.distance) ]
-      , Slider.view
-        [ Slider.onChange SetDistance
-        , Slider.value model.distance
-        , Slider.max 50
-        , Slider.min 0.0
-        , Slider.step 0.001
+    , div [ class "mdl-grid" ]
+      [ div [ class "mdl-cell--12-col" ] [ label [] [ text <| "Distance: " ++ (toString model.distance) ] ]
+      , div [ class "mdl-cell--12-col" ]
+        [ Slider.view
+          [ Slider.onChange SetDistance
+          , Slider.value model.distance
+          , Slider.max 50
+          , Slider.min 0.0
+          , Slider.step 0.001
+          ]
         ]
       ]
-    , div []
-      [ setOrientationButton 0.0
-      , setOrientationButton 90.0
-      , setOrientationButton 180.0
-      , setOrientationButton 270.0
-      ]
+    -- , div []
+    --   [ setOrientationButton 0.0
+    --   , setOrientationButton 90.0
+    --   , setOrientationButton 180.0
+    --   , setOrientationButton 270.0
+    --   ]
+    , div [ class "mdl-grid" ]
+      [ label [] [ text <| "Orientation: " ++ toString model.listenerOrientationDegrees ] ]
     , div
       [ id "compass-box"
       ]
@@ -311,6 +336,9 @@ port setListenerOrientationCmd
   : ListenerOrientation3D -> Cmd msg
 
 port setMuteStateCmd
+  : Bool -> Cmd msg
+
+port setCompassStateCmd
   : Bool -> Cmd msg
 
 port setPanningModelCmd

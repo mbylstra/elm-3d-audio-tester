@@ -1,16 +1,6 @@
-$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
-@import '~bootstrap-sass/assets/stylesheets/bootstrap/_mixins.scss';
-@import '~bootstrap-sass/assets/stylesheets/_bootstrap.scss';
-
-// can add Boostrap overrides, additional Sass/CSS below...
-//
-//
-//
-
-
 body {
-  background-color: black;
-  color: #EEE;
+  background-color: white;
+  color: #black;
 }
 #circle {
   margin: 20px;
@@ -23,6 +13,16 @@ body {
   fill: none;
 }
 
+label {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.panning-model-switch {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
 
 // #compass-box {
 //   width: 200px;
